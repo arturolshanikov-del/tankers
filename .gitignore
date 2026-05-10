@@ -1,0 +1,8 @@
+*.o
+tankers
+tankers.exe
+01_grayscale.png
+02_mask.png
+03_detections.png
+.DS_Store
+.idea/
