@@ -4,8 +4,6 @@
 #include <math.h>
 #include "lodepng.h"
 
-/* ---------- I/O wrappers ---------- */
-
 static unsigned char* load_png(const char* filename, unsigned int* w, unsigned int* h)
 {
     unsigned char* image = NULL;
@@ -27,9 +25,6 @@ static int save_png(const char* filename, const unsigned char* rgba, unsigned w,
     return 1;
 }
 
-/* ---------- preprocessing ---------- */
-
-/* Rec.601 luminance */
 static void to_grayscale(const unsigned char* rgba, unsigned char* gray, int n)
 {
     for (int i = 0; i < n; i++) {
@@ -40,7 +35,6 @@ static void to_grayscale(const unsigned char* rgba, unsigned char* gray, int n)
     }
 }
 
-/* 5x5 Gaussian blur (sigma ~ 1.0). Edge pixels normalised by actual weight sum. */
 static void gaussian_5x5(const unsigned char* src, unsigned char* dst, int w, int h)
 {
     static const int K[5][5] = {
@@ -69,11 +63,6 @@ static void gaussian_5x5(const unsigned char* src, unsigned char* dst, int w, in
     }
 }
 
-/* ---------- thresholding ---------- */
-
-/* Adaptive threshold: mean + k * stddev computed only over pixels where
-   roi[i] is non-zero. Restricting statistics to the water region prevents
-   the bright basemap from saturating the threshold. */
 static unsigned char compute_threshold(const unsigned char* gray,
                                        const unsigned char* roi,
                                        int n, double k)
@@ -110,8 +99,6 @@ static void apply_threshold(const unsigned char* gray, const unsigned char* roi,
     }
 }
 
-/* ---------- region of interest (single polygon, point-in-polygon) ---------- */
-
 typedef struct { int x, y; } Pt;
 
 static int in_polygon(int x, int y, const Pt* poly, int np)
@@ -135,8 +122,6 @@ static void build_roi(unsigned char* roi, int w, int h, const Pt* poly, int np)
         }
     }
 }
-
-/* ---------- connected components: iterative BFS, 8-connectivity ---------- */
 
 static int count_components(unsigned char* mask, int w, int h, int min_size, int max_size)
 {
@@ -184,8 +169,6 @@ static int count_components(unsigned char* mask, int w, int h, int min_size, int
     return count;
 }
 
-/* ---------- main ---------- */
-
 int main(int argc, char** argv)
 {
     const char* in_name  = (argc > 1) ? argv[1] : "tankers.png";
@@ -214,10 +197,6 @@ int main(int argc, char** argv)
     to_grayscale(rgba, gray, N);
     gaussian_5x5(gray, blurred, (int)W, (int)H);
 
-    /* Strait of Hormuz polygon for the upscaled (4x) image (5120x2588).
-       Vertices traverse the dark-water area clockwise, stair-stepping
-       around the curving coastline. Adjust if your image size or
-       framing differs. */
     static const Pt poly[] = {
         { 2153,   27 }, { 2887,   27 }, { 2887, 1189 }, { 3733, 1189 },
         { 3733, 1273 }, { 4521, 1273 }, { 4521, 1395 }, { 4535, 1395 },
@@ -241,7 +220,6 @@ int main(int argc, char** argv)
     }
     printf("Tankers found: %d\n", n_tankers);
 
-    /* Diagnostic outputs. */
     unsigned char* viz = (unsigned char*)malloc((size_t)N * 4);
     if (viz) {
         for (int i = 0; i < N; i++) {
